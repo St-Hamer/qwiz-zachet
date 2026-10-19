@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Квиз по блокчейну</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f0;--card:#fff;--ink:#14231e;--mute:#58675f;--line:#cfd9d4;--accent:#0f6b4f;--accent-ink:#fff;--ok:#0f6b4f;--okbg:#dff2e9;--bad:#b3341f;--badbg:#fbe4df}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a16;--card:#17261f;--ink:#e8f1ec;--mute:#9db0a6;--line:#2c4137;--accent:#4fd1a0;--accent-ink:#0a1713;--ok:#4fd1a0;--okbg:#17382b;--bad:#ff8c78;--badbg:#3b1f1a}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 Onest,system-ui,sans-serif;min-height:100vh}
+main{max-width:760px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:clamp(2.4rem,9vw,4.2rem);line-height:1;margin:0 0 12px;font-weight:800;letter-spacing:-.03em}
+h2{font-size:1.5rem;margin:0 0 16px;line-height:1.25}
+p{margin:0 0 12px}
+.mute{color:var(--mute)}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+button{font:inherit;font-weight:700;cursor:pointer;border-radius:10px;padding:14px 24px;border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+button.alt{background:transparent;color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,.opt:focus-within,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.menu-btns button{font-size:1.15rem;padding:18px 32px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-bottom:24px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.opt{display:block;border:2px solid var(--line);background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer}
+.opt input{margin-right:10px;accent-color:var(--accent)}
+.opt.sel{border-color:var(--accent)}
+.score{font-size:clamp(3rem,14vw,5.5rem);font-weight:800;line-height:1;letter-spacing:-.03em}
+.stats{display:flex;gap:12px;margin:20px 0 32px}
+.stat{flex:1;border-radius:10px;padding:14px 16px;font-weight:700}
+.stat b{font-size:1.8rem;display:block}
+.stat.ok{background:var(--okbg);color:var(--ok)}.stat.bad{background:var(--badbg);color:var(--bad)}
+.res{background:var(--card);border-left:6px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.res.ok{border-color:var(--ok)}.res.bad{border-color:var(--bad)}
+.tag{font-weight:700;font-size:.9rem}.res.ok .tag{color:var(--ok)}.res.bad .tag{color:var(--bad)}
+.res h3{margin:4px 0 8px;font-size:1.05rem}
+.res .ans{margin:0 0 4px}
+.art{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px;scroll-margin-top:16px}
+.art summary{cursor:pointer;font-weight:700;line-height:1.4}
+.art .body{margin-top:12px;font-size:.95rem}.art ul{padding-left:20px;margin:0 0 12px}.art h4{margin:16px 0 8px}
+.sec{margin:28px 0 12px;color:var(--accent);font-size:1.1rem}
+.art.hl{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+a{color:var(--accent);font-weight:500}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <section id="menu">
+    <h1 id="title"></h1>
+    <p class="mute" id="subtitle"></p>
+    <div class="row menu-btns">
+      <button id="btn-quiz">Квиз</button>
+      <button id="btn-kb" class="alt">База знаний</button>
+    </div>
+  </section>
+
+  <section id="quiz" hidden>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="mute" id="counter"></p>
+    <h2 id="qtext"></h2>
+    <div id="opts" role="radiogroup" aria-labelledby="qtext"></div>
+    <div class="row">
+      <button id="next" disabled>Далее</button>
+      <button id="quit" class="alt">Выйти в меню</button>
+    </div>
+  </section>
+
+  <section id="result" hidden>
+    <p class="mute">Результат</p>
+    <div class="score" id="score"></div>
+    <div class="stats">
+      <div class="stat ok"><b id="n-ok"></b>правильно</div>
+      <div class="stat bad"><b id="n-bad"></b>неправильно</div>
+    </div>
+    <div id="list"></div>
+    <div class="row">
+      <button id="again">Начать новый квиз</button>
+      <button id="to-menu" class="alt">Выйти в меню</button>
+    </div>
+  </section>
+
+  <section id="kb" hidden>
+    <h2>База знаний</h2>
+    <div id="articles"></div>
+    <div class="row"><button id="kb-back" class="alt">Назад</button></div>
+  </section>
+</main>
+<script src="data.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const S = window.SITE;
+const views = ["menu","quiz","result","kb"];
+let from = "menu", run = null;
+
+document.title = S.title;
+$("title").textContent = S.title;
+$("subtitle").textContent = S.subtitle;
+
+// База знаний
+$("articles").innerHTML = S.sections.map(sec => `<h3 class="sec">${sec}</h3>` +
+  S.articles.filter(a => a.section === sec).map(a =>
+  `<details class="art" id="kb-${a.id}"><summary>${a.title}</summary><div class="body">${a.html}</div></details>`).join("")).join("");
+
+function show(v){
+  views.forEach(x => $(x).hidden = x !== v);
+  window.scrollTo(0,0);
+}
+function openKb(id){
+  from = views.find(v => !$(v).hidden) || "menu";
+  show("kb");
+  document.querySelectorAll(".art").forEach(e => e.classList.remove("hl"));
+  if(id){ const el = $("kb-"+id); el.open = true; el.classList.add("hl"); el.scrollIntoView({block:"start"}); }
+}
+const shuffle = arr => { const a = [...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a };
+
+function startQuiz(){
+  const qs = shuffle(S.questions).slice(0, S.quizSize).map(q => {
+    const opts = shuffle(q.options.map((t,i) => ({t, ok: i === q.answer})));
+    return {...q, opts};
+  });
+  run = {qs, i:0, given:[], pick:null};
+  show("quiz"); render();
+}
+function render(){
+  const q = run.qs[run.i];
+  run.pick = null;
+  $("counter").textContent = `Вопрос ${run.i+1} из ${run.qs.length}`;
+  $("bar").style.width = (run.i / run.qs.length * 100) + "%";
+  $("qtext").textContent = q.q;
+  $("opts").innerHTML = q.opts.map((o,k) =>
+    `<label class="opt"><input type="radio" name="o" value="${k}">${o.t}</label>`).join("");
+  $("next").disabled = true;
+  $("next").textContent = run.i === run.qs.length-1 ? "Завершить" : "Далее";
+}
+$("opts").addEventListener("change", e => {
+  run.pick = +e.target.value;
+  document.querySelectorAll(".opt").forEach(l => l.classList.toggle("sel", l.contains(e.target)));
+  $("next").disabled = false;
+});
+$("next").onclick = () => {
+  run.given.push(run.pick);
+  if(++run.i < run.qs.length) render(); else finish();
+};
+
+function finish(){
+  const rows = run.qs.map((q,i) => ({q, pick: q.opts[run.given[i]], right: q.opts.find(o => o.ok)}));
+  const ok = rows.filter(r => r.pick.ok).length, bad = rows.length - ok;
+  $("score").textContent = `${ok} / ${rows.length}`;
+  $("n-ok").textContent = ok; $("n-bad").textContent = bad;
+  const art = id => S.articles.find(a => a.id === id);
+  $("list").innerHTML = rows.map((r,i) => r.pick.ok
+    ? `<div class="res ok"><span class="tag">Верно</span><h3>${i+1}. ${r.q.q}</h3><p class="ans">${r.pick.t}</p></div>`
+    : `<div class="res bad"><span class="tag">Неверно</span><h3>${i+1}. ${r.q.q}</h3>
+        <p class="ans">Ваш ответ: ${r.pick.t}</p>
+        <p class="ans"><b>Правильный ответ: ${r.right.t}</b></p>
+        <p class="mute">${r.q.why} <a href="#kb-${r.q.article}" data-kb="${r.q.article}">Читать: ${art(r.q.article).title}</a></p></div>`).join("");
+  show("result");
+}
+$("list").addEventListener("click", e => {
+  const a = e.target.closest("[data-kb]");
+  if(a){ e.preventDefault(); openKb(a.dataset.kb); }
+});
+
+$("btn-quiz").onclick = startQuiz;
+$("btn-kb").onclick = () => openKb();
+$("again").onclick = startQuiz;
+$("to-menu").onclick = () => show("menu");
+$("quit").onclick = () => show("menu");
+$("kb-back").onclick = () => show(from === "kb" ? "menu" : from);
+</script>
+</body>
+</html>
